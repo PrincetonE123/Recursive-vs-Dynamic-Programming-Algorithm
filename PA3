@@ -1,0 +1,122 @@
+/*
+PA-3-Source.cpp
+
+Princeton Epeagba J00701287
+*/
+
+#include <iostream>
+#include <chrono>   //time
+#include <fstream> //imported library that allows for reading and writting files
+#include <string>
+#include <cmath>    // Imported math functions
+
+
+using namespace std;
+using namespace std::chrono;
+
+
+int fibonacciR(int n);  //recursive function
+int fibonacciD(int n);  //dynamic function
+void printCSV(int size, int nValues[], int fibonacciRec[], int fibonacciDyn[], double timeR[], double timeD[], const char* filename);   //excel print utility
+ 
+
+int main() {
+    char choice;
+    int n;
+
+    do {
+        cout << "Select an algorithm - ('R' or 'r') for Recursive, ('D' or 'd') for DP to pick your own fibonacci value - When done select ('E' or 'e') to exit program and create an excel with preset values: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 'R':
+        case 'r':
+            cout << "Enter the value of n: ";
+            cin >> n;
+            cout << "F(" << n << ") = " << fibonacciR(n) << endl;
+            break;
+        case 'D':
+        case 'd':
+            cout << "Enter the value of n: ";
+            cin >> n;
+            cout << "F(" << n << ") = " << fibonacciD(n) << endl;
+            break;
+        case 'E':
+        case 'e':
+            cout << "Exiting and creating excel";
+            break;
+        default:
+            cout << "Invalid choice. Please try again." << endl;
+        }
+    } 
+    while (choice != 'E' && choice != 'e');
+
+    int nValues[] = {10, 12, 15, 20, 23, 25, 30};
+    const int size = 7;
+    int fibonacciRec[size]; 
+    int fibonacciDyn[size]; //only fibonacciDyn is used for requested F(n) value in excel but Rec can be used as well
+    double timeR[size]; //Array storing recursize times
+    double timeD[size]; //Array storing dynamic times
+    const char* filename = "Fibonacci_Time.csv";
+
+    for (int i = 0; i < size; i++) {
+        auto start_recursive = high_resolution_clock::now();
+        fibonacciRec[i] = fibonacciR(nValues[i]);
+        auto stop_recursive = high_resolution_clock::now();
+        auto duration_recursive = duration_cast<nanoseconds>(stop_recursive - start_recursive);
+        timeR[i] = duration_recursive.count();
+
+        auto start_dp = high_resolution_clock::now();
+        fibonacciDyn[i] = fibonacciD(nValues[i]);
+        auto stop_dp = high_resolution_clock::now();
+        auto duration_dp = duration_cast<nanoseconds>(stop_dp - start_dp);
+        timeD[i] = duration_dp.count();
+    }
+
+    printCSV(size, nValues, fibonacciRec, fibonacciDyn, timeR, timeD, filename);
+
+    return 0;
+}
+
+// Recursive Fibonacci Algorithm
+int fibonacciR(int n) {
+    if (n <= 1)
+        return 1;
+    else
+        return fibonacciR(n - 1) + fibonacciR(n - 2);
+}
+
+// Dynamic Programming Fibonacci Algorithm w/ Space Complexity = 1 
+int fibonacciD(int n) {
+    int A[3];
+    A[1] = 1;
+    A[0] = 1;
+    if (n == 1 || n == 0) return 1;
+    for (int i = 2; i <= n; i++) {
+        A[2] = A[1] + A[0];
+        A[0] = A[1];
+        A[1] = A[2];
+    }
+    return A[2];
+}
+
+void printCSV(int size, int nValues[], int fibonacciRec[], int fibonacciDyn[], double timeR[], double timeD[], const char* filename) {
+    ofstream csvFile(filename);
+    if (!csvFile.is_open()) {
+        cerr << "Error opening output file." << filename << endl;   //check for errors
+        return;
+    }
+
+    // Excel headers
+    csvFile << "n,F(n),T1: Time spent on the recursive algorithm (nanoseconds),T2: Time spent on the DP algorithm (nanoseconds),Value of (2^n)/n,Value of T1/T2\n";
+
+    // Written data
+    for (int i = 0; i < size; i++) {
+    double exp = pow(2, nValues[i]) / static_cast<double>(nValues[i]);
+    double tRatio = timeR[i] / timeD[i];
+    csvFile << nValues[i] << "," << fibonacciDyn[i] << "," << fixed << timeR[i] << "," << fixed << timeD[i] << "," << scientific << exp << "," << scientific << tRatio << "\n";
+    }
+
+    cout << "CSV file created: " << filename << endl;
+    csvFile.close();
+}
